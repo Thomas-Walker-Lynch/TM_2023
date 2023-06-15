@@ -1,0 +1,23 @@
+/*
+Template for a sequence.
+
+*/
+
+#if defined(ISeq·DECLARATION) && !defined(Arithmetic·DECLARED)
+#endif
+
+#if defined(ISeq·PROCESS)
+#endif
+
+#if defined(ISeq·THREAD)
+#endif
+
+#if defined(ISeq·LOCAL)
+#endif
+
+#if defined(ISeq·LINK)
+#endif
+
+#if defined(ISeq·SEQ)
+#endif
+

@@ -1,0 +1,174 @@
+
+--------------------------------------------------------------------------------
+#if defined(ISQ·Sequence) union
+
+  The ‘#if defined(ISQ·Sequence) union’ may be used for holding values where
+  it is clear that they will not be overwritten by other use of the union before
+  they are used. 
+
+  Actually this is the leaf case for the optimization on the tableau for
+  finding disjoint sets of variable lifetimes. In general is rather difficult to
+  do this manually, and it is fragile against changes to the code.  Also
+  C has a local variable method based on braces for scoping, as discussed
+  in the next section.  It is not the way we want to do locals, but it
+  is too convenient to not use it for now.
+
+--------------------------------------------------------------------------------
+#if defined(ISQ·Sequence) union
+
+  The C langage provides native syntax for declaring local variables. Variables
+  declared in this manner will be given an allocation on the stack frame for
+  the function.  As we are including all Squences into 'main', they will
+  end up on the stack base. Hence for long programs using the C language
+  syntax for delcaring locals could waste a lot of space.
+
+    Sequences are wrapped in braces, but the only hard constraint for the
+    compiler is to maintain lexical scoping. Gcc for example gives all
+    locals within a function a unique location within the stack frame no
+    matter where they occured within lexical scoping. This makes sense because
+    of the existence of the 'goto' statement, as labels are not scoped. It
+    is also simpler and more efficent, as code is expected to be written as
+    a series of small functions where dynamically mirring the scope operator
+    with stack pushes an pops might not be worth the trouble.
+
+  Even when we put all locals in a struct that lives in the '#if
+  defined(ISQ·Sequence) union', the compiler might generate its own locals on
+  the stack. When we have a dedicated compiler for the Wave language, we can
+  have it put such variables into the ‘#if defined(ISQ·Sequence) union’.  This
+  is an implementation issue, not a conceptual one.
+
+
+--------------------------------------------------------------------------------
+#if define(ISQ·Thread) block
+
+  The tableau as discussed in the book refers to #if define(ISQ·Thread) block
+  data, and #if define(ISQ·Process) block data.
+
+  The tableau is planned and reflects the *static* structure of the program.
+
+--------------------------------------------------------------------------------
+Currying
+
+  Currying a sequence is as simple as assigning values within its
+  args structure at a point of execution earlier than directly
+  before the call.
+
+  We typically cannot curry in arguments from a #define ISQ·Sequence block,
+  because those blocks are in union between sequences, so any data held in them
+  that a sequence is not aware of, may be overwritten.  An optimizing
+  compiler might analyze a program and be able to make this work.
+
+--------------------------------------------------------------------------------
+Flow through
+
+  Suppose we want to be able to write a sequence of calls, something like this:
+
+  Seq·define(s0)
+
+     S0·A.args = ..
+     call(S0·A ,sa)
+
+     S0·B.args = ..
+     call(S0·B ,sb)
+
+     S0·C.args = ..
+     call(S0·C ,sc)
+
+  Seq·end
+
+  The call macro would have a default continuation for falling through built
+  into it.  This can be implemented by putting a label at the bottom of the call
+  macro and providing a default fall_through continuation as an argument to each
+  sequence.
+
+  After falling through A we want the same data context to be available to the
+  'B.args = ...'  that was available to the 'A.args = ...'. This will be the
+  case when A, B, and C are on the tableau.  In general they can not be in a '#if
+  defined(ISQ·Sequence) union' because the called sequences might then overwrite
+  their data.
+
+  If we use a result centric tableau model, then we can also do this:
+
+  Seq·define(s0)
+
+     S0·A.args = ..
+     S0·B.args = ..
+     S0·C.args = ..
+
+     call(S0·A ,sa)
+     call(S0·B ,sb)
+     call(S0·C ,sc)
+
+  Seq·end
+
+  Where an input value is needed we write a reference to the result.  We leave
+  the results fields blank, so to speak. The calls then fill them in. The first
+  section with the 'args = ' statements 'wires up', or ‘links’ the sequence
+  data flow.
+
+  Because the connection step does not require having results, the part of it
+  that does not depend on inputs to the sequence can be executed separately, and
+  need only be executed only once.
+
+  #if defined(Seq·LINK)
+     S0·A.args = ..
+     S0·B.args = ..
+     S0·C.args = ..
+  #endif
+
+  Seq·define(s0)
+     // After the first call, the ISeq·current_arg_pt will be overwritten.
+     // connections to inputs must be done at call time, not in the Seq·LINK block
+     S0·A.args.t = S0.args.x; // for example, connecting to one of the inputs
+     ...
+     call(S0·A ,sa)
+     call(S0·B ,sb)
+     call(S0·C ,sc)
+  Seq·end
+
+  In places where it can be proven that values on the tableau are
+  not used simultaneously, those may also be placed into a union. So though
+  A, B, and C can not be placed on the '#if defined(ISQ·Sequence) union',
+  they can be placed on a next level of locality union. That union
+  would not be used by the call(A), call(B), and call(C) sequences.
+  Hence we can use a static analysis and levelize the code, creating
+  disjoint unions at each level.  This determines the amount of
+  control memory required.  (Being distinct from data memory.)
+
+--------------------------------------------------------------------------------
+A hitch
+
+  "This can be implemented by putting a label at the bottom of the call
+  macro and providing a default flow_through continuation as an argument to each
+  sequence."
+
+  Actually this is not easy to do. The flow_through continuation label is in the
+  connection section, so the programmer needs to know it to connect.  Labels
+  are global independent of lexical scope so we need to put the label in
+  the squence's name space, but the call macro does not know what that is.
+
+  Hence, for this first pass I will just manually add the label after the
+  call if I want consequtive calls. Later when we have a dedicated compiler
+  this problem can be solved.
+
+  Seq·define(s0)
+     // After the first call, the ISeq·current_arg_pt will be overwritten.
+     // connections to inputs must be done at call time, not in the Seq·LINK block
+     S0·A.args.t = S0.args.x; // for example, connecting to one of the inputs
+     ...
+     call(S0·A ,sa); S0·p1:
+     call(S0·B ,sb); S0·p2:
+     call(S0·C ,sc); S0·p3:
+  Seq·end
+
+--------------------------------------------------------------------------------
+life times
+
+  A sequence has inputs and outputs.  The inputs are pointers to prior results.
+  The outputs are pointers into the tableau as to where to write each result.
+  This list of pointers is typically born just before the sequence is called,
+  and dies withihn the sequence.  
+
+
+  
+  

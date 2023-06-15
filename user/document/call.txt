@@ -1,0 +1,34 @@
+
+Each time a general use sequence is called, it may be called with different arguments.
+So then, where does a sequence find its arguments?
+
+1. in a thread variable
+
+Within a thread only one sequence runs at a time.  Hence we can use a thread variable
+to point to the current arguments.
+
+In this example, seq is the address of the first instruction in the sequence, and
+arg is the address of the args struct:
+
+  #define ISeq·call(seq ,arg)                     \
+    ISeq·current_arg = arg;                       \
+    ISeq·continue(seq);
+
+
+Each sequences then finds its arguments at the location ISeq·current_arg.
+
+2. in a sequence specific variable
+
+  In this example, ns is the namespace of the sequence, while arg is the
+  address of the arg struct.
+
+    #define ISeq·call(ns ,arg)                    \
+      ns·arg = arg;                       \
+      ISeq·continue(ns·seq);
+
+  Because only one sequence at a time runs, all of the ns·arg values can
+  be placed in a union, and we are back to the solution in #1.
+
+  This does not help when scheduling sequences as I had hoped. However,
+  we can just copy a squence pointer to the scheduling queue, as a
+  pointer keeps a copy of the arg struct pointer.

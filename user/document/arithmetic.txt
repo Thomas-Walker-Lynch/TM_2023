@@ -1,0 +1,74 @@
+need fuller discussion of the material in this do in the book.
+
+operation - built in function
+calculation - a composition of operations
+computatoin - calculations and decisions.
+
+cell can hold anything
+need a section on 'alternative nomenclature'
+tape: array, struct, can be abstract
+cell: byte, word, whatever the allocation unit is for the array, can be abstract, element, component
+leftmost: base
+rightmost: stack top, last element
+address: offset, index, field name
+add mapping for struct in section with mapping for array
+
+
+     1. extent_unit_conversion
+
+     for our array mapping model:
+
+     t2  finite tape, each cell is an element
+     t1i each tape is an element, multiple tapes, each the same finite length.
+     t0  a finite tape, each cell is a byte
+
+     Suppose we have an operation such that:
+
+       n(t0) = n(t2) o n(t1i)
+
+     I.e. given the extent of t2 and t1i, returns the extent of t0.  In otherwords
+     given the extent of the array measured in elements, and given the extent of an element,
+     compute the extent of the array in bytes.  
+
+     An analogous operation in C speak, is that of multiplying the length of an array
+     by the length of an element to find the size of the array.  However here
+     we are talking about extents rather than lengths.
+
+     Array length is one greater than extent, so for computing the array size we have:
+
+        n(t0) + 1 = (n(t2) + 1)(n(t1i) + 1)
+
+     However we want the extent of t0, not its length, so:
+
+        n(t0) = (n(t2) + 1)(n(t1i) + 1) - 1
+
+     If we have an integer representation that holds any address on tape t0,
+     that representation might overflow when performing the computation
+     just above. This will be avoided if we simplify the computation to:
+
+        n(t0) = n(t2) n(t1i) + n(t2) + n(t1i)
+
+     examples:
+
+        n(t2) = 0,  n(t1i) = 3   -> n(t0) = 3
+        n(t2) = 1,  n(t1i) = 3   -> n(t0) = 7
+        n(t2) = 2,  n(t1i) = 3   -> n(t0) = 11
+
+
+     2. addressed unit conversion
+
+       or put more simply, address conversion.
+
+       Suppose we have an address that locates an object.  For example the t2 extent
+       locates the last element in the array.  Now suppose we want to convert
+       the units of measure for this address.
+
+         a(t0) = a(t2) (n(t1i) + 1) = a(t2) n(t1i) + a(t2) 
+
+   eg.  a(t2) = 0,  n(t1i) = 3   --> 0
+        a(t2) = 1,  n(t1i) = 3   --> 4
+        a(t2) = 2,  n(t1i) = 3   --> 8
+
+    3. return values are taken to be byte distances from the address of the first
+       byte in the array.
+

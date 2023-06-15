@@ -1,0 +1,77 @@
+/*
+Template for a sequence.
+
+*/
+
+#if defined(ISeq·DECLARATION) && !defined(Arithmetic_Test_0·DECLARED)
+
+  // made public so others may assign arguments before calling this function
+  typedef struct{
+    ISeq·Pt pass;
+    ISeq·Pt indeterminate;
+    ISeq·Pt fail;
+  } Arithmetic_Test_0·Argument;
+
+#endif
+
+#if defined(ISeq·PROCESS)
+  // results shared with process
+  Unsigned_Integer_64 n_word = 3; // extent of a word, measured in bytes (4 bytes in a word)
+  Unsigned_Integer_64 n_array = 8; // extent of the array, measured in elements, i.e. the max index
+  Unsigned_Integer_64 i = 2;  // index of 2 (address within array of the 3rd word)
+#endif
+
+#if defined(ISeq·THREAD)
+  // C limitations with label references at global scope forces this code to be here where it will
+  // be repeated on each thread launch. If it were at the ISeq·PROCESS level, it could be done once.
+  //
+  // Set the main call to come here, currently the test exits, so it has no continuations.
+  Arithmetic_Test_0·Argument Arithmetic_Test_0·argument = {ISeq·limbo_pt ,ISeq·limbo_pt ,ISeq·limbo_pt};
+  ISeq·Pt Arithmetic_Test_0·main_pt = {&&Arithmetic_Test_0·main ,&Arithmetic_Test_0·argument};
+  ISeq·main = Arithmetic_Test_0·main_pt;
+
+  // computed results
+  Unsigned_Integer_64 Tableau·nt0;
+  Unsigned_Integer_64 Tableau·at0;
+#endif
+
+#if defined(ISeq·SEQ)
+  /* 
+    This sequence is not re-entrant from within the sequences it relays to. This
+    is due to &Tableau·nt0 and potentially &Tableau·at0 carrying a message to
+    Arithmetic_Test_0·Main·check_results. Also, C might not reallocate arg0 or
+    arg1 upon reentrance (see the doc on lexical scope).
+   */
+  ISeq·sequence(Arithmetic_Test_0·main){
+    Arithmetic_Test_0·Argument *arg = ISeq·current_argument;
+
+    Arithmetic_Test_0·Main·convert_extent:
+    Arithmetic·Extent_Unit_Conversion·Arg arg0 = {
+      .nt1i=&n_word 
+      ,.nt2=&n_array 
+      ,.nt0=&Tableau·nt0 
+      ,.ok = {&&Arithmetic_Test_0·Main·convert_address ,NULL}
+    };
+    ISeq·current_argument = &arg0;
+    ISeq·continue( *Arithmetic·collection.extent_unit_conversion );
+
+    Arithmetic_Test_0·Main·convert_address:
+    Arithmetic·Address_Unit_Conversion·Arg arg1 = {
+      .nt1i=&n_word 
+      ,.at2=&i 
+      ,.at0=&Tableau·at0
+      ,.ok={&&Arithmetic_Test_0·Main·check_results ,NULL}
+    };
+    ISeq·current_argument = &arg1;
+    ISeq·continue( *Arithmetic·collection.address_unit_conversion );
+
+    Arithmetic_Test_0·Main·check_results:
+
+    printf("%u\n" ,Tableau·nt0);
+    printf("%u\n" ,Tableau·at0);
+
+    exit(0);
+      
+  }
+#endif
+

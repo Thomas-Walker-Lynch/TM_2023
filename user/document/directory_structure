@@ -1,0 +1,19 @@
+
+Think of a directory name as an attribute given to each file in the directory.
+
+ incantatio-loadable/ - git ignored, for makefile built excecutables (incantatio, singing)
+   experiment/ 
+   production/
+   test/
+ deprecated/ - old stuff kept around for easy access typically sake of example
+ document/ 
+ incantatio-C/ - source code 
+   experiment/
+   production/
+   test/
+ library/ - git ignored, makefile generated object code and libs
+ resource/ - stuff of general use that is not git ignored
+ temporary/ - git ignored
+
+A word for a 'book of incantatio', use this for a 'package':
+  incantamentarium

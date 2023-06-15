@@ -1,0 +1,94 @@
+/*
+Provides:
+   macros for defining specific use sequences
+   macros for defining general use sequences
+
+   definition of a pointer to a sequence - an argument pointer, sequence pointer pair
+   definition of sequence that exits the program, default is a limbo/lost message
+   definition of a link to the program exiting sequence to be used to initialize continuation fields
+
+   A variable that holds the current arguments pointer.
+   A variable that holds a sequence pointer to the main sequence, i.e. the entry point.
+
+   The sequence defining macros originally had flow-in and flow-out error continuations,
+   so there was a sequence end tag to hang the flow-out error on. That stuff became
+   a maintenance problem during experiments so I took it out.
+
+
+*/
+
+#define ISeq·Exit·MAX_EXIT_CODE 2048
+#define ISeq·Exit·LIMBO_MESSAGE "Continued into limbo, guess we will have to terminate the program."
+#define ISeq·Exit·LIMBO_MESSAGE_EXTENT 79
+#define ISeq·Exit·LIMBO_EXIT_CODE 27
+#define ISeq·Exit·LOST_MESSAGE "Sequencing has gotten lost."
+#define ISeq·Exit·LOST_EXIT_CODE 1027
+ 
+
+#if defined(ISeq·DECLARATION) && !defined(ISeq·DECLARED)
+#define ISeq·DECLARED
+  #include <stdlib.h>
+  #include <string.h>
+  #include <stdio.h>
+  #include <stdbool.h>
+
+  typedef void *ISeq·Address;
+
+  #define ISeq·sequence(name) name:
+
+  #define ISeq·continue(sequence) goto sequence;
+
+  typedef struct{
+    ISeq·Address sequence;
+    void *argument;
+  }ISeq·Pt;
+
+  #define ISeq·relay(iseq_pt)                          \
+    ISeq·current_argument  = iseq_pt.argument;         \
+    ISeq·continue(*iseq_pt.sequence);
+
+  typedef struct{
+    char *message;
+    int  exit_code;
+  }ISeq·Limbo_Arg;
+#endif
+
+// According to C philosophy all code occurs inside of a function. This includes
+// simple assignment even, but does not include code generated using the
+// initialization syntax.
+//
+// C language model does not allow reference to a label outside of function scope,
+// so &&label to initialize a pointer can not occur here. Not sure why this is.
+//
+#if defined(ISeq·PROCESS)
+  ISeq·Pt ISeq·main;
+#endif
+
+#if defined(ISeq·THREAD)
+  ISeq·Limbo_Arg ISeq·limbo_arg = { ISeq·Exit·LIMBO_MESSAGE ,ISeq·Exit·LIMBO_EXIT_CODE };
+  ISeq·Pt ISeq·limbo_pt = { &&ISeq·exit ,&ISeq·limbo_arg };
+
+  void *ISeq·current_argument = NULL;
+  ISeq·main = ISeq·limbo_pt; // default when the program fails to define a process entry point.
+#endif
+
+#if defined(ISeq·LOCAL)
+#endif
+
+#if defined(ISeq·LINK)
+#endif
+
+#if defined(ISeq·SEQ)
+  ISeq·sequence(ISeq·exit){
+    ISeq·Limbo_Arg *arg = ISeq·current_argument;
+    if( arg->message && strnlen( arg->message ,ISeq·Exit·LIMBO_MESSAGE_EXTENT+2 ) < ISeq·Exit·LIMBO_MESSAGE_EXTENT+2 )
+      printf("%s\n" ,arg->message);
+    else
+      printf(ISeq·Exit·LOST_MESSAGE);
+
+    if( arg->exit_code <= ISeq·Exit·MAX_EXIT_CODE )
+      exit(arg->exit_code);
+    else
+      exit(ISeq·Exit·LOST_EXIT_CODE);
+  }
+#endif

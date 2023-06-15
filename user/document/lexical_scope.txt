@@ -1,0 +1,16 @@
+
+Lexical scope is not the same as dynamic scope in C.
+
+Variables within braces can only be linked symbolically within the braces.
+
+In C the variables remain on the stack frame, so can be referenced by address
+until the stack frame is popped.
+
+All the sequence work is done inside of main, so all variables in braces
+are stack base allocated.  Their stack frame does not get popped until
+the program ends.
+
+Hence braces can be used for their benifit of having short names without
+conflicting with the names of variables in other sets of braces, while
+the addresses of these variables my placed into objects and they
+may continued to be used.

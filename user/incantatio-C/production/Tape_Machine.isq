@@ -1,0 +1,164 @@
+/*
+See documents/arithetic.txt
+
+Types are intepretted here in the sense of format and allocation.
+
+Modifiers are added as suffixes.  Each suffix has an underscore to separate it
+from the rest of the identifier.  e.g. Integer16_n_byte, iss the extent of an
+integer measured in units of bytes.
+
+Result centric tableau, so inputs are passed by reference, results
+are written directly.
+
+*/
+
+#if defined(ISeq·DECLARATION) && !defined(Tape_Machine·DECLARED)
+  #define Tape_Machine·DECLARED
+
+  typedef struct{
+    Address *src;
+    Address *dst;
+    Unsigned_Integer_64 *n;
+    ISeq·Pt ok;
+  }Tape_Machine·Copy_Area·Arg;
+
+
+  typedef struct{
+    Address *a0;
+    Address *a1;
+    Unsigned_Integer_64 *n;
+    ISeq·Pt lesser;
+    ISeq·Pt equal;
+    ISeq·Pt greater;
+  }Tape_Machine·Compare_Area·Arg;
+
+  typedef struct {
+    ISeq·Address flow_through;
+    Unsigned_Integer_64 *nt2; 
+    Unsigned_Integer_64 *nt1i; 
+    Unsigned_Integer_64 *nt0;
+    ISeq·Pt ok;
+  } Tape_Machine·Extent_Unit_Conversion·Arg;
+
+  typedef struct {
+    ISeq·Address flow_through;
+    Unsigned_Integer_64 *at2;
+    Unsigned_Integer_64 *nt1i;
+    Unsigned_Integer_64 *at0;
+    ISeq·Pt ok;
+  } Tape_Machine·Address_Unit_Conversion·Arg;
+
+  typedef struct{
+    ISeq·Address copy_area;
+    ISeq·Address compare_area;
+    ISeq·Address extent_unit_conversion;
+    ISeq·Address address_unit_conversion;
+  } Tape_Machine·Collection;
+#endif
+
+#if defined(ISeq·PROCESS)
+#endif
+
+#if defined(ISeq·THREAD)
+#endif
+
+#if defined(ISeq·LOCAL)
+#endif
+
+#if defined(ISeq·LINK)
+  Tape_Machine·Collection Tape_Machine·collection = {
+    &&Tape_Machine·copy_area
+    ,&&Tape_Machine·compare_area
+    ,&&Tape_Machine·extent_unit_conversion
+    ,&&Tape_Machine·address_unit_conversion
+  };
+#endif
+
+#if defined(ISeq·SEQ)
+
+  ISeq·sequence(Tape_Machine·copy_area){
+    // link inputs
+    Tape_Machine·Copy_Area·Arg *arg = ISeq·current_argument;
+    char *src = *(arg->src);
+    char *dst = *(arg->dst);
+    Unsigned_Integer_64 n = *(arg->n);
+    ISeq·Pt ok = arg->ok;
+
+    // work
+    Tape_Machine·Copy_Area·loop0:
+      *dst = *src;
+      if( n == 0 ) goto Tape_Machine·Copy_Area·end;
+      dst++;
+      src++;
+      n = n - 1;
+      goto Tape_Machine·Copy_Area·loop0;
+    Tape_Machine·Copy_Area·end:
+
+    ISeq·relay(ok);
+  }
+
+  ISeq·sequence(Tape_Machine·compare_area){
+    // link inputs
+    Tape_Machine·Compare_Area·Arg *arg = ISeq·current_argument;
+    char *a0 = *(arg->a0);
+    char *a1 = *(arg->a1);
+    Unsigned_Integer_64 n = *(arg->n);
+
+    ISeq·Pt lesser = arg->lesser;
+    ISeq·Pt greater = arg->greater;
+    ISeq·Pt equal = arg->equal;
+
+    // work    
+    Tape_Machine·Compare_Area·loop0:
+      if( *a0 < *a1) ISeq·relay(lesser);
+      if( *a0 > *a1) ISeq·relay(greater);
+      if( n == 0 ) goto Tape_Machine·Compare_Area·end;
+      a0++;
+      a1++;
+      n = n - 1;
+      goto Tape_Machine·Compare_Area·loop0;
+    Tape_Machine·Compare_Area·end:
+    ISeq·relay(equal);
+  }
+
+  // for example, units words nt2 to units bytes nt0  (nt1i then being the byte extent of a word)
+  ISeq·sequence(Tape_Machine·extent_unit_conversion){
+    // link inputs
+    Tape_Machine·Extent_Unit_Conversion·Arg *arg = ISeq·current_argument;
+    Unsigned_Integer_64 nt2 = *(arg->nt2);
+    Unsigned_Integer_64 nt1i = *(arg->nt1i);
+    ISeq·Pt ok = arg->ok;
+
+    // work
+    Unsigned_Integer_64 nt0;
+    nt0 = nt2 * nt1i;
+    nt0 += nt2;
+    nt0 += nt1i;
+
+    *(arg->nt0) = nt0;
+    ISeq·relay(ok);  // how does ok get its arguments?
+  }
+
+  // for example, units words to units bytes
+  ISeq·sequence(Tape_Machine·address_unit_conversion){
+    // link inputs
+    Tape_Machine·Address_Unit_Conversion·Arg *arg = ISeq·current_argument;
+    Unsigned_Integer_64 at2 = *(arg->at2);
+    Unsigned_Integer_64 nt1i =*(arg->nt1i);
+    ISeq·Pt ok = arg->ok;
+
+    // work
+    Unsigned_Integer_64 at0;
+    at0 = at2 * nt1i;
+    at0 += at2;
+
+    *(arg->at0) = at0;
+    ISeq·relay(ok);  // how does ok get its arguments?
+  }
+
+#if 0
+
+
+#endif
+
+#endif

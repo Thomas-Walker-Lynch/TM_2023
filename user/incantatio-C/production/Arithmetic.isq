@@ -1,0 +1,201 @@
+/*
+See documents/arithetic.txt
+
+Types are intepretted here in the sense of format and allocation.
+
+Modifiers are added as suffixes.  Each suffix has an underscore to separate it
+from the rest of the identifier.  e.g. Integer16_n_byte, iss the extent of an
+integer measured in units of bytes.
+
+Result centric tableau, so inputs are passed by reference, results
+are written directly.
+
+*/
+
+#if defined(ISeq·DECLARATION) && !defined(Arithmetic·DECLARED)
+  #define Arithmetic·DECLARED
+
+  #include <stdint.h>
+  #include <limits.h>
+  #include "ISeq.isq"
+
+  typedef int8_t Integer_8;
+  typedef int16_t Integer_16;
+  typedef int32_t Integer_32;
+  typedef int64_t Integer_64;
+  typedef __int128 Integer_128;
+
+  #define Integer_8_n_bit 7
+  #define Integer_16_n_bit 15
+  #define Integer_32_n_bit 31
+  #define Integer_64_n_bit 63
+  #define Integer_128_n_bit 127
+
+  #define Integer_8_n_byte 0
+  #define Integer_16_n_byte 1
+  #define Integer_32_n_byte 3
+  #define Integer_64_n_byte 7
+  #define Integer_128_n_byte 15
+
+  typedef uint8_t Unsigned_Integer_8;
+  typedef uint16_t Unsigned_Integer_16;
+  typedef uint32_t Unsigned_Integer_32;
+  typedef uint64_t Unsigned_Integer_64;
+  typedef unsigned __int128 Unsigned_Integer_128;
+
+  #define Unsigned_Integer_8_max ~((Unsigned_Integer_8)0)
+  #define Unsigned_Integer_16_max ~((Unsigned_Integer_16)0)
+  #define Unsigned_Integer_32_max ~((Unsigned_Integer_32)0)
+  #define Unsigned_Integer_64_max ~((Unsigned_Integer_64)0)
+  #define Unsigned_Integer_128_max ~((Unsigned_Integer_128)0)
+
+  // tempting to make this a Unsigned_Integer_64
+  typedef void *Address; // understood to be a byte address, by industry convention
+  
+  typedef struct{
+    Address *src;
+    Address *dst;
+    Unsigned_Integer_64 *n;
+    ISeq·Pt ok;
+  }Arithmetic·Copy_Area·Arg;
+
+
+  typedef struct{
+    Address *a0;
+    Address *a1;
+    Unsigned_Integer_64 *n;
+    ISeq·Pt lesser;
+    ISeq·Pt equal;
+    ISeq·Pt greater;
+  }Arithmetic·Compare_Area·Arg;
+
+  typedef struct {
+    ISeq·Address flow_through;
+    Unsigned_Integer_64 *nt2; 
+    Unsigned_Integer_64 *nt1i; 
+    Unsigned_Integer_64 *nt0;
+    ISeq·Pt ok;
+  } Arithmetic·Extent_Unit_Conversion·Arg;
+
+  typedef struct {
+    ISeq·Address flow_through;
+    Unsigned_Integer_64 *at2;
+    Unsigned_Integer_64 *nt1i;
+    Unsigned_Integer_64 *at0;
+    ISeq·Pt ok;
+  } Arithmetic·Address_Unit_Conversion·Arg;
+
+  typedef struct{
+    ISeq·Address copy_area;
+    ISeq·Address compare_area;
+    ISeq·Address extent_unit_conversion;
+    ISeq·Address address_unit_conversion;
+  } Arithmetic·Collection;
+#endif
+
+#if defined(ISeq·PROCESS)
+#endif
+
+#if defined(ISeq·THREAD)
+#endif
+
+#if defined(ISeq·LOCAL)
+#endif
+
+#if defined(ISeq·LINK)
+  Arithmetic·Collection Arithmetic·collection = {
+    &&Arithmetic·copy_area
+    ,&&Arithmetic·compare_area
+    ,&&Arithmetic·extent_unit_conversion
+    ,&&Arithmetic·address_unit_conversion
+  };
+#endif
+
+#if defined(ISeq·SEQ)
+
+  ISeq·sequence(Arithmetic·copy_area){
+    // link inputs
+    Arithmetic·Copy_Area·Arg *arg = ISeq·current_argument;
+    char *src = *(arg->src);
+    char *dst = *(arg->dst);
+    Unsigned_Integer_64 n = *(arg->n);
+    ISeq·Pt ok = arg->ok;
+
+    // work
+    Arithmetic·Copy_Area·loop0:
+      *dst = *src;
+      if( n == 0 ) goto Arithmetic·Copy_Area·end;
+      dst++;
+      src++;
+      n = n - 1;
+      goto Arithmetic·Copy_Area·loop0;
+    Arithmetic·Copy_Area·end:
+
+    ISeq·relay(ok);
+  }
+
+  ISeq·sequence(Arithmetic·compare_area){
+    // link inputs
+    Arithmetic·Compare_Area·Arg *arg = ISeq·current_argument;
+    char *a0 = *(arg->a0);
+    char *a1 = *(arg->a1);
+    Unsigned_Integer_64 n = *(arg->n);
+
+    ISeq·Pt lesser = arg->lesser;
+    ISeq·Pt greater = arg->greater;
+    ISeq·Pt equal = arg->equal;
+
+    // work    
+    Arithmetic·Compare_Area·loop0:
+      if( *a0 < *a1) ISeq·relay(lesser);
+      if( *a0 > *a1) ISeq·relay(greater);
+      if( n == 0 ) goto Arithmetic·Compare_Area·end;
+      a0++;
+      a1++;
+      n = n - 1;
+      goto Arithmetic·Compare_Area·loop0;
+    Arithmetic·Compare_Area·end:
+    ISeq·relay(equal);
+  }
+
+  // for example, units words nt2 to units bytes nt0  (nt1i then being the byte extent of a word)
+  ISeq·sequence(Arithmetic·extent_unit_conversion){
+    // link inputs
+    Arithmetic·Extent_Unit_Conversion·Arg *arg = ISeq·current_argument;
+    Unsigned_Integer_64 nt2 = *(arg->nt2);
+    Unsigned_Integer_64 nt1i = *(arg->nt1i);
+    ISeq·Pt ok = arg->ok;
+
+    // work
+    Unsigned_Integer_64 nt0;
+    nt0 = nt2 * nt1i;
+    nt0 += nt2;
+    nt0 += nt1i;
+
+    *(arg->nt0) = nt0;
+    ISeq·relay(ok);  // how does ok get its arguments?
+  }
+
+  // for example, units words to units bytes
+  ISeq·sequence(Arithmetic·address_unit_conversion){
+    // link inputs
+    Arithmetic·Address_Unit_Conversion·Arg *arg = ISeq·current_argument;
+    Unsigned_Integer_64 at2 = *(arg->at2);
+    Unsigned_Integer_64 nt1i =*(arg->nt1i);
+    ISeq·Pt ok = arg->ok;
+
+    // work
+    Unsigned_Integer_64 at0;
+    at0 = at2 * nt1i;
+    at0 += at2;
+
+    *(arg->at0) = at0;
+    ISeq·relay(ok);  // how does ok get its arguments?
+  }
+
+#if 0
+
+
+#endif
+
+#endif

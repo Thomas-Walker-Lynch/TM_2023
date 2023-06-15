@@ -1,0 +1,8 @@
+
+temporary/
+library/
+incantatio-loadable/
+*~
+*.o
+a.out
+

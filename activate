@@ -1,0 +1,6 @@
+
+export PATH="$REPO_HOME/user/incantatio-loadable:$PATH"
+cd "$REPO_HOME"/user
+
+
+

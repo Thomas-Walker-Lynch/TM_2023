@@ -1,0 +1,58 @@
+
+‘data’ is what may be placed into or read from the cells of a tape.
+
+A ‘value’ is another name for data. It carries the connotation of being the
+result of a computation. This gives it some identity beyond being merely data.
+When we talk about values, we also think about mathematics where values are
+given to, and produced by, functions.
+
+An 'instance' is data pointed at by the interface of an abstract data type. This
+gives it a formal defintion, so it is more specific than ‘value’. Typically we
+say 'instance of' and then name the abstract data type.
+
+An ‘object’ is an instance of some abstract data type, but when using this term
+it need not be clear which abstract data type we are speaking of. It is a
+genertic term for instances of various types.
+
+An ‘allocation' is memory set aside by a memory manager.  The memory manager
+typically treats the allocation as merely holding data.  In contrast, a
+programmer typically interprets an allocation as something for holding an
+instance.
+
+An ‘address’ locates a cell on a tape, i.e. a memory cell. Given our tape abstraction
+for objects, the contents of the cell may be an object, i.e. an address may be used
+to locate an object.
+
+An ‘indicator’, also known as ‘index’, is added to a base address to locate a
+cell on tape.  An indicated cell may be part of an abstruction such
+that that the index is locating an object.
+
+An ‘offset’ is similar to an index, though the unit of distance is typically bytes.
+The term is typically used when talkign about assembly code.
+
+A ‘pointer’ is an address along with type infomration for the addressed value.
+
+A ‘symbol’ refers to a value. It is a ‘reference’.  C++ gave a language specific
+definition for ‘reference’ that is different.
+
+When a given symbol is used in more than one place, those places are said to be
+symbolically ‘linked’.
+
+There is a special process for reducing symbol links to addresses.  This process
+is called ‘linking’.  Two types of symbol table entries are involved in in this process.
+The first type identifies an unintialized allocation where an address should go,
+and provides a symbolic name for the missing address.  The second type has a
+symbolic name and gives a value.
+
+Linking occurs at compile time, in a step after compile time but before load
+time - this is called static linking.  Potentially at load time. For dynamic
+libraries at run time. Wave has two more link steps.  One in the #if
+defined(ISQ·LINK), and then finally at the top of a sequence where the sequence
+inputs are linked. We refered to these final link steps which are coded into
+the program as ‘latent linking’.
+
+‘abstraction’ - see the ‘how to write programs’ book for an excellent definition.
+
+
+
+
